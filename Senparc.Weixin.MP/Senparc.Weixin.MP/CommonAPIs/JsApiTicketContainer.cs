@@ -20,12 +20,16 @@ using Senparc.Weixin.MP.Entities;
 
 namespace Senparc.Weixin.MP.CommonAPIs
 {
-    class JsApiTicketBag
+    internal class JsApiTicketBag
     {
         public string AppId { get; set; }
+
         public string AppSecret { get; set; }
+
         public DateTime ExpireTime { get; set; }
+
         public JsApiTicketResult JsApiTicketResult { get; set; }
+
         /// <summary>
         /// 只针对这个AppId的锁
         /// </summary>
@@ -37,8 +41,13 @@ namespace Senparc.Weixin.MP.CommonAPIs
     /// </summary>
     public class JsApiTicketContainer
     {
-        static Dictionary<string, JsApiTicketBag> JsApiTicketCollection =
-           new Dictionary<string, JsApiTicketBag>(StringComparer.OrdinalIgnoreCase);
+        private static IJsApiTicketContainer apiTicketContainer = new JsApiTicketContainerImpl();
+
+        public static IJsApiTicketContainer ApiTicketContainer
+        {
+            get { return apiTicketContainer; }
+            set { apiTicketContainer = value; }
+        }
 
         /// <summary>
         /// 注册应用凭证信息，此操作只是注册，不会马上获取Ticket，并将清空之前的Ticket，
@@ -46,6 +55,111 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="appSecret"></param>
         public static void Register(string appId, string appSecret)
+        {
+            apiTicketContainer.Register(appId, appSecret);
+        }
+
+        /// <summary>
+        /// 使用完整的应用凭证获取Ticket，如果不存在将自动注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        /// <param name="getNewTicket"></param>
+        /// <returns></returns>
+        public static string TryGetTicket(string appId, string appSecret, bool getNewTicket = false)
+        {
+            return apiTicketContainer.TryGetTicket(appId, appSecret, getNewTicket);
+        }
+
+        /// <summary>
+        /// 获取可用Ticket
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
+        /// <returns></returns>
+        public static string GetTicket(string appId, bool getNewTicket = false)
+        {
+            return apiTicketContainer.GetTicket(appId, getNewTicket);
+        }
+
+        /// <summary>
+        /// 获取可用Ticket
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
+        /// <returns></returns>
+        public static JsApiTicketResult GetTicketResult(string appId, bool getNewTicket = false)
+        {
+            return apiTicketContainer.GetTicketResult(appId, getNewTicket);
+        }
+
+        /// <summary>
+        /// 检查是否已经注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <returns></returns>
+        public static bool CheckRegistered(string appId)
+        {
+            return apiTicketContainer.CheckRegistered(appId);
+        }
+    }
+
+    public interface IJsApiTicketContainer
+    {
+        /// <summary>
+        /// 注册应用凭证信息，此操作只是注册，不会马上获取Ticket，并将清空之前的Ticket，
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        void Register(string appId, string appSecret);
+
+        /// <summary>
+        /// 使用完整的应用凭证获取Ticket，如果不存在将自动注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        /// <param name="getNewTicket"></param>
+        /// <returns></returns>
+        string TryGetTicket(string appId, string appSecret, bool getNewTicket = false);
+
+        /// <summary>
+        /// 获取可用Ticket
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
+        /// <returns></returns>
+        string GetTicket(string appId, bool getNewTicket = false);
+
+        /// <summary>
+        /// 获取可用Ticket
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
+        /// <returns></returns>
+        JsApiTicketResult GetTicketResult(string appId, bool getNewTicket = false);
+
+        /// <summary>
+        /// 检查是否已经注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <returns></returns>
+        bool CheckRegistered(string appId);
+    }
+
+    /// <summary>
+    /// 通用接口JsApiTicket容器，用于自动管理JsApiTicket，如果过期会重新获取
+    /// </summary>
+    public class JsApiTicketContainerImpl : IJsApiTicketContainer
+    {
+        private Dictionary<string, JsApiTicketBag> JsApiTicketCollection =
+            new Dictionary<string, JsApiTicketBag>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 注册应用凭证信息，此操作只是注册，不会马上获取Ticket，并将清空之前的Ticket，
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        public void Register(string appId, string appSecret)
         {
             JsApiTicketCollection[appId] = new JsApiTicketBag()
             {
@@ -63,7 +177,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appSecret"></param>
         /// <param name="getNewTicket"></param>
         /// <returns></returns>
-        public static string TryGetTicket(string appId, string appSecret, bool getNewTicket = false)
+        public string TryGetTicket(string appId, string appSecret, bool getNewTicket = false)
         {
             if (!CheckRegistered(appId) || getNewTicket)
             {
@@ -78,7 +192,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
         /// <returns></returns>
-        public static string GetTicket(string appId, bool getNewTicket = false)
+        public string GetTicket(string appId, bool getNewTicket = false)
         {
             return GetTicketResult(appId, getNewTicket).ticket;
         }
@@ -89,7 +203,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="getNewTicket">是否强制重新获取新的Ticket</param>
         /// <returns></returns>
-        public static JsApiTicketResult GetTicketResult(string appId, bool getNewTicket = false)
+        public JsApiTicketResult GetTicketResult(string appId, bool getNewTicket = false)
         {
             if (!JsApiTicketCollection.ContainsKey(appId))
             {
@@ -114,7 +228,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// </summary>
         /// <param name="appId"></param>
         /// <returns></returns>
-        public static bool CheckRegistered(string appId)
+        public bool CheckRegistered(string appId)
         {
             return JsApiTicketCollection.ContainsKey(appId);
         }

@@ -186,6 +186,7 @@
     <Compile Include="CommonAPIs\AccessTokenContainer.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="CommonAPIs\IAccessTokenContainer.cs" />
     <Compile Include="CommonAPIs\JsApiTicketContainer.cs" />
     <Compile Include="Entities\JsonResult\JsApiTicketResult.cs" />
     <Compile Include="Entities\Menu\SingleScancodePushButton.cs" />

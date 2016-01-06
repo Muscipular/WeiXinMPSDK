@@ -40,8 +40,13 @@ namespace Senparc.Weixin.MP.CommonAPIs
     /// </summary>
     public class AccessTokenContainer
     {
-        static Dictionary<string, AccessTokenBag> AccessTokenCollection =
-           new Dictionary<string, AccessTokenBag>(StringComparer.OrdinalIgnoreCase);
+        static IAccessTokenContainer accessTokenContainer = new AccessTokenContainerImpl();
+
+        public static IAccessTokenContainer TokenContainer
+        {
+            get { return accessTokenContainer; }
+            set { accessTokenContainer = value; }
+        }
 
         /// <summary>
         /// 注册应用凭证信息，此操作只是注册，不会马上获取Token，并将清空之前的Token，
@@ -49,6 +54,75 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="appSecret"></param>
         public static void Register(string appId, string appSecret)
+        {
+            accessTokenContainer.Register(appId, appSecret);
+        }
+
+        /// <summary>
+        /// 使用完整的应用凭证获取Token，如果不存在将自动注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        /// <param name="getNewToken"></param>
+        /// <returns></returns>
+        public static string TryGetToken(string appId, string appSecret, bool getNewToken = false)
+        {
+            return accessTokenContainer.TryGetToken(appId, appSecret, getNewToken);
+        }
+
+        /// <summary>
+        /// 获取可用Token
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewToken">是否强制重新获取新的Token</param>
+        /// <returns></returns>
+        public static string GetToken(string appId, bool getNewToken = false)
+        {
+            return accessTokenContainer.GetToken(appId, getNewToken);
+        }
+
+        /// <summary>
+        /// 获取可用Token
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="getNewToken">是否强制重新获取新的Token</param>
+        /// <returns></returns>
+        public static AccessTokenResult GetTokenResult(string appId, bool getNewToken = false)
+        {
+            return accessTokenContainer.GetTokenResult(appId, getNewToken);
+        }
+
+        /// <summary>
+        /// 检查是否已经注册
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <returns></returns>
+        public static bool CheckRegistered(string appId)
+        {
+            return accessTokenContainer.CheckRegistered(appId);
+        }
+
+        /// <summary>
+        /// 返回已经注册的第一个AppId
+        /// </summary>
+        /// <returns></returns>
+        public static string GetFirstOrDefaultAppId()
+        {
+            return accessTokenContainer.GetFirstOrDefaultAppId();
+        }
+    }
+
+    public class AccessTokenContainerImpl : IAccessTokenContainer
+    {
+        Dictionary<string, AccessTokenBag> AccessTokenCollection =
+           new Dictionary<string, AccessTokenBag>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 注册应用凭证信息，此操作只是注册，不会马上获取Token，并将清空之前的Token，
+        /// </summary>
+        /// <param name="appId"></param>
+        /// <param name="appSecret"></param>
+        public void Register(string appId, string appSecret)
         {
             AccessTokenCollection[appId] = new AccessTokenBag()
             {
@@ -66,7 +140,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appSecret"></param>
         /// <param name="getNewToken"></param>
         /// <returns></returns>
-        public static string TryGetToken(string appId, string appSecret, bool getNewToken = false)
+        public string TryGetToken(string appId, string appSecret, bool getNewToken = false)
         {
             if (!CheckRegistered(appId) || getNewToken)
             {
@@ -81,7 +155,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="getNewToken">是否强制重新获取新的Token</param>
         /// <returns></returns>
-        public static string GetToken(string appId, bool getNewToken = false)
+        public string GetToken(string appId, bool getNewToken = false)
         {
             return GetTokenResult(appId, getNewToken).access_token;
         }
@@ -92,7 +166,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// <param name="appId"></param>
         /// <param name="getNewToken">是否强制重新获取新的Token</param>
         /// <returns></returns>
-        public static AccessTokenResult GetTokenResult(string appId, bool getNewToken = false)
+        public AccessTokenResult GetTokenResult(string appId, bool getNewToken = false)
         {
             if (!AccessTokenCollection.ContainsKey(appId))
             {
@@ -117,7 +191,7 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// </summary>
         /// <param name="appId"></param>
         /// <returns></returns>
-        public static bool CheckRegistered(string appId)
+        public bool CheckRegistered(string appId)
         {
             return AccessTokenCollection.ContainsKey(appId);
         }
@@ -126,9 +200,10 @@ namespace Senparc.Weixin.MP.CommonAPIs
         /// 返回已经注册的第一个AppId
         /// </summary>
         /// <returns></returns>
-        public static string GetFirstOrDefaultAppId()
+        public string GetFirstOrDefaultAppId()
         {
-            return  AccessTokenCollection.Keys.FirstOrDefault();
+            return AccessTokenCollection.Keys.FirstOrDefault();
         }
     }
+
 }
